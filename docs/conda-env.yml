@@ -1,0 +1,12 @@
+name: PALM-tools
+channels:
+  - conda-forge
+dependencies:
+  - h5netcdf
+  - netcdf4
+  - numpy
+  - xarray
+  - spyder
+  - matplotlib
+  - colorcet
+prefix: /opt/anaconda3/envs/PALM-tools
