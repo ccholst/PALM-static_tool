@@ -10,7 +10,6 @@ Created on Fri Sep 30 17:51:35 2022
 # Dependencies
 # =============================================================================
 
-import sys
 import xarray as xr
 import numpy as np
 
@@ -24,25 +23,29 @@ import colorcet as cc
 # Parameters
 # =============================================================================
 
-# Colormaps
+# PLOTS: Colormaps
 CMAP_abs = cc.cm.CET_L11
 CMAP_dif = cc.cm.CET_D1
 
-# Plot titles
+# PLOTS: Topography plot range
+zmin = 0
+zmax = 350
+
+# PLOTS: Titles
 TITLE = "Test domain, PALM-4U v2204, dx = 10m, dz = 10m"
 
-# Buffer width
+# PROCESSING: Buffer width
 BUFFER_T = 26
 BUFFER_B = 16
 
-# Vertical grid spacing
+# GRID: Vertical grid spacing
 DZ = 15
 
-# Paths
+# IO: Paths
 PATH_INPUT = '/Users/holst-c/Desktop/'
 PATH_OUTPUT = '/Users/holst-c/Desktop/'
 
-# Job ID
+# IO: Job ID
 JOB_ID = 'big_suhi_default_static'
 
 # =============================================================================
@@ -203,9 +206,6 @@ def process_and_plot(topo_smooth: bool = True,
     except:
 
         pass
-
-    zmin = 0
-    zmax = 350
 
 # =============================================================================
 # Difference plot for domain 1
@@ -442,10 +442,15 @@ def b_h_bdy3_3d(BH3D, BH2D, BUFFER=10, DZ=5):
 
 
 
-def z_t_bdy5(H, BUFFER: int = 40, OPERATION: object = np.median,
-             TEST: bool = False, TEST2: bool = False):
+def z_t_bdy5(H, BUFFER: int = 40, OPERATION: object = np.median):
     """
     Smoothen topography height along boundaries of 2-D array.
+
+    Version notes
+    -------------
+
+    Version 5 without any debugging or logging features.
+    DON'T USE FOR DEVELOPMENT, DEBUGGING, TESTING! USE z_t_bdy5_debug!!!
 
     Parameters
     ----------
@@ -459,12 +464,6 @@ def z_t_bdy5(H, BUFFER: int = 40, OPERATION: object = np.median,
 
     OPERATION : function object, optional
         Operation used for smoothing along boundary. The default is np.median.
-
-    TEST : bool, optional
-        Debugging flags for extra output. The default is False.
-
-    TEST2 : bool, optional
-        Debugging flags for extra output. The default is False.
 
     Returns
     -------
@@ -499,16 +498,6 @@ def z_t_bdy5(H, BUFFER: int = 40, OPERATION: object = np.median,
 
     H2 = np.copy(H)
 
-    if TEST or TEST2:
-        BUFFER = 4
-        H2 = np.zeros((10,10))
-        n = 0
-        for i in range(H2.shape[0]):
-            for j in range(H2.shape[1]):
-                H2[i,j] = n
-                n = n+1
-        H = np.copy(H2)
-
 # =============================================================================
 # Vectors top, right, bottom, left, i.e., clockwise
 # =============================================================================
@@ -529,60 +518,6 @@ def z_t_bdy5(H, BUFFER: int = 40, OPERATION: object = np.median,
     Vbuff = np.concatenate((V[-BUFFER:], V, V[:BUFFER]))
 
 # =============================================================================
-# Extensive diagnostics if TEST2
-# =============================================================================
-
-    if TEST:
-
-        print(80*"=")
-        print("TEST1:")
-        print("are vectors correctly extracted")
-        print("---")
-        print(H2.shape)
-        print("---")
-        print(H2)
-        print("---")
-        print(f"Vt {Vt.size} {Vt}")
-        print(f"Vr {Vr.size} {Vr}")
-        print(f"Vb {Vb.size} {Vb}")
-        print(f"Vl {Vl.size} {Vl}")
-        print("---")
-        print(f"Vbuff {Vbuff.size}")
-        print(Vbuff)
-        print("---")
-        print(f"V2 {V2.size}")
-        print(V2)
-        print(f"Vbuff[buffer:-buffer] {Vbuff[BUFFER:-BUFFER].size}")
-        print(Vbuff[BUFFER:-BUFFER])
-
-        H  = np.zeros((10,10))
-        H2 = np.zeros((10,10))
-
-        for i,v in enumerate(range(BUFFER,V2.size+BUFFER)):
-
-            V2[i] = v
-            V[i]  = v
-
-        for i in range(Vbuff.size):
-
-            Vbuff[i]=i
-
-        print(80*"=")
-        print("TEST2:")
-        print("do vector operations work as intended")
-        print("---")
-        print(H2)
-        print("---")
-        print(f"Vbuff {Vbuff.size}")
-        print(Vbuff)
-        print("---")
-        print(f"V2 {V2.size}")
-        print(V2)
-        print(f"Vbuff[buffer:-buffer] {Vbuff[BUFFER:-BUFFER].size}")
-        print(Vbuff[BUFFER:-BUFFER])
-        print("---")
-
-# =============================================================================
 # Central moving average operation along buffered vector
 # =============================================================================
 
@@ -592,25 +527,13 @@ def z_t_bdy5(H, BUFFER: int = 40, OPERATION: object = np.median,
         # Define buffered indices for Vbuff
         i1 = i + BUFFER - int(BUFFER/2)
         i2 = i + BUFFER + int(BUFFER/2)
-        
+
         # If length of slice even: i2+1: bit level magic (fast)
         if (i2-i1) & 0x1 == 0:
 
             i2 = i2 + 1 
 
         V2[i] = OPERATION(Vbuff[i1:i2])
-        
-        if TEST:
-
-            print(Vbuff[i1:i2],V2[i])
-
-
-    if TEST:
-
-        print("---")
-        print(f"V2 {V2.size} after OPERATION {OPERATION}")
-        print(V2)
-        print("---")
 
 # =============================================================================
 # Unwind vector into 2D
@@ -620,69 +543,23 @@ def z_t_bdy5(H, BUFFER: int = 40, OPERATION: object = np.median,
     i2 = Vt.size
     H2[:,-1] = V2[i1:i2]
 
-    if TEST:
-
-        print("top")
-        print(V2[i1:i2])
-        print(H2[:,-1])
-        print("---")
-    
-
     i1 += Vt.size
     i2 += Vr.size
     H2[-1,1:-1] = np.flip(V2[i1:i2])
-
-    if TEST:
-
-        print("right")
-        print(np.flip(V2[i1:i2]))
-        print(H2[-1,1:-1])
-        print("---")
 
     i1 += Vr.size
     i2 += Vb.size
     H2[:,0] =  np.flip(V2[i1:i2])
 
-    if TEST:
-
-        print("bottom")
-        print(np.flip(V2[i1:i2]))
-        print(H2[:,0])
-        print("---")
-
     i1 += Vb.size
     i2 += Vl.size
     H2[0,1:-1] = V2[i1:i2]
-
-    if TEST:
-
-        print("left")
-        print(V2[i1:i2])
-        print(H2[0,1:-1])
-        print("---")
-        print("FINAL")
-        print(H2)
 
 # =============================================================================
 # Repeat for inner buffer zone
 # =============================================================================
 
     for X in range(1,BUFFER):
-
-        if TEST2:
-
-            BUFFER = 4
-            H2 = np.zeros((10,10))
-            n = 0
-
-            for i in range(H2.shape[0]):
-
-                for j in range(H2.shape[1]):
-
-                    H2[i,j] = n
-                    n = n+1
-
-            H = np.copy(H2)
 
 # =============================================================================
 # Decrease averaging window for increasing distance from boundary
@@ -710,31 +587,300 @@ def z_t_bdy5(H, BUFFER: int = 40, OPERATION: object = np.median,
         Vbuff = np.concatenate((V[-BUFFER2:],V,V[:BUFFER2]))
 
 # =============================================================================
-# Extensive diagnostics if TEST2
+# Central moving average operation along buffered vector
+# =============================================================================
+
+        # Define index for data vector V2
+        for i in range(np.size(V)):
+
+            # define buffered indices for Vbuff
+            i1 = i + BUFFER2 - int(BUFFER2/2)
+            i2 = i + BUFFER2 + int(BUFFER2/2)
+
+            # If length of slice even: i2+1: bit level magic (fast)
+            if (i2-i1) & 0x1 == 0:
+
+                i2 = i2 + 1
+
+            V2[i] = OPERATION(Vbuff[i1:i2])
+
+# =============================================================================
+# Unwind vector into 2D
+# =============================================================================
+
+        i1 = 0
+        i2 = Vt.size
+        H2[X:(-X),-1-X] = V2[i1:i2]
+
+        i1 += Vt.size
+        i2 += Vr.size
+        H2[-X-1,(1+X):(-1-X)] = np.flip(V2[i1:i2])
+
+        i1 += Vr.size
+        i2 += Vb.size
+        H2[(X):(-X),X] =  np.flip(V2[i1:i2])
+
+        i1 += Vb.size
+        i2 += Vl.size
+        H2[X,(1+X):(-1-X)] = V2[i1:i2]
+
+    return H2
+
+
+
+def z_t_bdy5_debug(H, BUFFER: int = 40, OPERATION: object = np.median,
+                   TEST1: bool = False, TEST2: bool = False):
+    """
+    Smoothen topography height along boundaries of 2-D array.
+
+    Version 5
+
+    Parameters
+    ----------
+
+    H : numpy.array
+        Topography height in m.
+
+    BUFFER : int, optional
+        Width and depth of the smoothing operation in grid points.
+        The default is 40.
+
+    OPERATION : function object, optional
+        Operation used for smoothing along boundary. The default is np.median.
+
+    TEST1 : bool, optional
+        Debugging switch for extra output of the outer boundary.
+        The default is False.
+
+    TEST2 : bool, optional
+        Debugging switch for extra output of consecutive inner vectors.
+        The default is False.
+
+    Returns
+    -------
+    H2 : numpy.array
+        Smoothened topography height in m.
+
+    Explaination
+    ------------
+    Inspired by Nokia "Snake" game:
+
+    - Vectorize data along boundary as follows
+
+        ->   top
+      o----------o
+      |  ->      |
+    l |  o----o  | r
+    e |  |    |  | i
+    f |  |    |  | g
+    t |  |    |  | h
+      |  o----o  | t
+      |          |
+      o----------o
+         bottom
+
+    - Calculate moving average along vector by buffering it front and back
+    - Unwind the snake vector and remap into 2D.
+    - Repeat for shorter vectors and buffers into the domain
+    - The smoothing kernel looks like a triangle.
+    - Smoothing only happens parallel to the boundary, rather than in 2-D
+
+    """
+
+    H2 = np.copy(H)
+    
+    if TEST1 or TEST2:
+
+        DIAG = ""
+
+# =============================================================================
+# Vectors top, right, bottom, left, i.e., clockwise
+# =============================================================================
+
+    Vt = H[:,-1]
+    Vr = np.flip(H[-1,1:-1]) # spare the first and last value
+    Vb = np.flip(H[:,0])
+    Vl = H[0,1:-1] # spare the first and last value
+
+    V  = np.concatenate((Vt,Vr,Vb,Vl))
+
+    V2 = np.copy(V)
+
+# =============================================================================
+# Create bufferzone before and after data to enable cyclic averages
+# =============================================================================
+
+    Vbuff = np.concatenate((V[-BUFFER:], V, V[:BUFFER]))
+
+# =============================================================================
+# Test: Vector properties of outer vectors
+# =============================================================================
+
+    if TEST1:
+
+        DIAG += 80*"="+"\n"+"TEST1:\n"+"are vectors correctly extracted" + \
+                f"\n---\n{H2.shape}\n---\n{H2}\n---\n" + \
+                f"Vt {Vt.size} {Vt}\n" + f"Vr {Vr.size} {Vr}\n" + \
+                f"Vb {Vb.size} {Vb}\n" + f"Vl {Vl.size} {Vl}\n---\n" + \
+                f"Vbuff {Vbuff.size}\n" + f"{Vbuff}\n---\n" + \
+                f"V2 {V2.size}\n" + f"{V2}\n" + \
+                f"Vbuff[buffer:-buffer] {Vbuff[BUFFER:-BUFFER].size}\n" + \
+                f"{Vbuff[BUFFER:-BUFFER]}\n\n\n"
+        
+        assert Vt.size == Vb.size
+        assert Vt.size == Vr.size + 2
+        assert Vr.size == Vl.size
+
+        assert Vbuff.size == V2.size + 2*BUFFER
+        assert V2.size == 2*(H.shape[0] - 1 + H.shape[1] - 1)
+
+        assert np.array_equal(Vbuff[BUFFER:-BUFFER], V2)
+
+        H  = np.zeros((10,10))
+        H2 = np.zeros((10,10))
+
+        for i,v in enumerate(range(BUFFER,V2.size+BUFFER)):
+
+            V2[i] = v
+            V[i]  = v
+
+        for i in range(Vbuff.size):
+
+            Vbuff[i]=i
+
+# =============================================================================
+# Central moving average operation along buffered vector
+# =============================================================================
+
+    # Define index for data vector V2
+    for i in range(np.size(V)):
+
+        # Define buffered indices for Vbuff
+        i1 = i + BUFFER - int(BUFFER/2)
+        i2 = i + BUFFER + int(BUFFER/2)
+
+        # If length of slice even: i2+1: bit level magic (fast)
+        if (i2-i1) & 0x1 == 0:
+
+            i2 = i2 + 1 
+
+        V2[i] = OPERATION(Vbuff[i1:i2])
+
+        if TEST1:
+
+            DIAG += f"{Vbuff[i1:i2],V2[i]}\n\n"
+
+# =============================================================================
+# Test: Values are correct
+# =============================================================================
+
+    if TEST1:
+
+        DIAG += f"V {V.size} before OPERATION {OPERATION}\n{V}\n---\n"
+        DIAG += f"V2 {V2.size} after OPERATION {OPERATION}\n{V2}\n---\n"
+
+        assert np.array_equal(V, V2)
+
+# =============================================================================
+# Unwind vector into 2D
+# =============================================================================
+
+    i1 = 0
+    i2 = Vt.size
+    H2[:,-1] = V2[i1:i2]
+
+    if TEST1:
+
+        DIAG += f"top\n{V2[i1:i2]}{H2[:,-1]}\n---\n"
+
+        assert np.array_equal(V2[i1:i2], H2[:,-1])
+
+    i1 += Vt.size
+    i2 += Vr.size
+    H2[-1,1:-1] = np.flip(V2[i1:i2])
+
+    if TEST1:
+
+        DIAG += f"right\n{np.flip(V2[i1:i2])}{H2[-1,1:-1]}\n---\n"
+
+        assert np.array_equal(np.flip(V2[i1:i2]), H2[-1,1:-1])
+
+    i1 += Vr.size
+    i2 += Vb.size
+    H2[:,0] =  np.flip(V2[i1:i2])
+
+    if TEST1:
+
+        DIAG += f"bottom\n{np.flip(V2[i1:i2])}{H2[:,0]}\n---\n"
+
+        assert np.array_equal(np.flip(V2[i1:i2]), H2[:,0])
+
+    i1 += Vb.size
+    i2 += Vl.size
+    H2[0,1:-1] = V2[i1:i2]
+
+    if TEST1:
+
+        DIAG += f"left\n{V2[i1:i2]}{H2[0,1:-1]}\n---\n"
+
+        assert np.array_equal(V2[i1:i2], H2[0,1:-1])
+
+        DIAG += f"FINAL\n{H2}"
+
+# =============================================================================
+# Repeat for inner buffer zone
+# =============================================================================
+
+    for X in range(1,BUFFER):
+
+# =============================================================================
+# Decrease averaging window for increasing distance from boundary
+# =============================================================================
+
+        BUFFER2 = BUFFER - X + 1
+
+# =============================================================================
+# Vectors top, right, bottom, left, i.e., clockwise
+# =============================================================================
+
+        Vt = H[X:(-X),-1-X]
+        Vr = np.flip(H[-X-1,(1+X):(-1-X)])
+        Vb = np.flip(H[(X):(-X),X])
+        Vl = H[X,(1+X):(-1-X)]
+
+        V = np.concatenate((Vt,Vr,Vb,Vl))
+
+        V2 = np.copy(V)
+
+# =============================================================================
+# Create bufferzone before and after data to enable cyclic averages
+# =============================================================================
+
+        Vbuff = np.concatenate((V[-BUFFER2:],V,V[:BUFFER2]))
+
+# =============================================================================
+# Test: Vector properties of inner vectors
 # =============================================================================
 
         if TEST2:
 
-            print(80*"=")
-            print("TEST1:")
-            print("are vectors correctly extracted")
-            print("---")
-            print(H2.shape)
-            print("---")
-            print(H2)
-            print("---")
-            print(f"Vt {Vt.size} {Vt}")
-            print(f"Vr {Vr.size} {Vr}")
-            print(f"Vb {Vb.size} {Vb}")
-            print(f"Vl {Vl.size} {Vl}")
-            print("---")
-            print(f"Vbuff {Vbuff.size}")
-            print(Vbuff)
-            print("---")
-            print(f"V2 {V2.size}")
-            print(V2)
-            print(f"Vbuff[buffer:-buffer] {Vbuff[BUFFER:-BUFFER].size}")
-            print(Vbuff[BUFFER:-BUFFER])
+            DIAG +=80*"="+"\n"+"TEST1:\n"+"are vectors correctly extracted" + \
+                   f"\n---\n{H2.shape}\n---\n{H2}\n---\n" + \
+                   f"Vt {Vt.size} {Vt}\n" + f"Vr {Vr.size} {Vr}\n" + \
+                   f"Vb {Vb.size} {Vb}\n" + f"Vl {Vl.size} {Vl}\n---\n" + \
+                   f"Vbuff {Vbuff.size}\n" + f"{Vbuff}\n---\n" + \
+                   f"V2 {V2.size}\n" + f"{V2}\n" + \
+                   f"Vbuff[buffer:-buffer] {Vbuff[BUFFER:-BUFFER].size}\n" + \
+                   f"{Vbuff[BUFFER:-BUFFER]}\n\n\n"
+
+            assert Vt.size == Vb.size
+            assert Vt.size == Vr.size + 2
+            assert Vr.size == Vl.size
+
+            assert Vbuff.size == V2.size + 2*BUFFER2
+            assert V2.size == 2*(H.shape[0] - 1 + H.shape[1] - 1) - 4*X
+
+            assert np.array_equal(Vbuff[BUFFER:-BUFFER], V2)
 
             H  = np.zeros((10,10))
             H2 = np.zeros((10,10))
@@ -747,21 +893,6 @@ def z_t_bdy5(H, BUFFER: int = 40, OPERATION: object = np.median,
             for i in range(Vbuff.size):
 
                 Vbuff[i]=i
-
-            print(80*"=")
-            print("TEST2:")
-            print("do vector operations work as intended")
-            print("---")
-            print(H2)
-            print("---")
-            print(f"Vbuff {Vbuff.size}")
-            print(Vbuff)
-            print("---")
-            print(f"V2 {V2.size}")
-            print(V2)
-            print(f"Vbuff[buffer:-buffer] {Vbuff[BUFFER:-BUFFER].size}")
-            print(Vbuff[BUFFER:-BUFFER])
-            print("---")
 
 # =============================================================================
 # Central moving average operation along buffered vector
@@ -783,14 +914,11 @@ def z_t_bdy5(H, BUFFER: int = 40, OPERATION: object = np.median,
 
             if TEST2:
 
-                print(Vbuff[i1:i2],V2[i])
+                DIAG += f"{Vbuff[i1:i2],V2[i]}\n\n"
 
-        if TEST:
+        if TEST2:
 
-            print("---")
-            print(f"V2 {V2.size} after OPERATION {OPERATION}")
-            print(V2)
-            print("---")
+            DIAG += f"V2 {V2.size} after OPERATION {OPERATION}\n{V2}\n---\n"
 
 # =============================================================================
 # Unwind vector into 2D
@@ -802,10 +930,9 @@ def z_t_bdy5(H, BUFFER: int = 40, OPERATION: object = np.median,
 
         if TEST2:
 
-            print("top")
-            print(V2[i1:i2])
-            print(H2[X:(-X),-1-X])
-            print("---")
+            DIAG = f"top\n{V2[i1:i2]}{H2[X:(-X),-1-X]}\n---\n"
+
+            assert np.array_equal(V2[i1:i2], H2[X:(-X),-1-X])
 
         i1 += Vt.size
         i2 += Vr.size
@@ -813,10 +940,9 @@ def z_t_bdy5(H, BUFFER: int = 40, OPERATION: object = np.median,
 
         if TEST2:
 
-            print("right")
-            print(np.flip(V2[i1:i2]))
-            print(H2[-X-1,(1+X):(-1-X)])
-            print("---")
+            DIAG += f"right\n{np.flip(V2[i1:i2])}{H2[-X-1,(1+X):(-1-X)]}\n---\n"
+
+            assert np.array_equal(np.flip(V2[i1:i2]), H2[-X-1,(1+X):(-1-X)])
 
         i1 += Vr.size
         i2 += Vb.size
@@ -824,28 +950,38 @@ def z_t_bdy5(H, BUFFER: int = 40, OPERATION: object = np.median,
     
         if TEST2:
 
-            print("bottom")
-            print(np.flip(V2[i1:i2]))
-            print(H2[(X):(-X),X])
-            print("---")
-    
+            DIAG += f"bottom\n{np.flip(V2[i1:i2])}{H2[(X):(-X),X]}\n---\n"
+
+            assert np.array_equal(np.flip(V2[i1:i2]), H2[(X):(-X),X])
+
         i1 += Vb.size
         i2 += Vl.size
         H2[X,(1+X):(-1-X)] = V2[i1:i2]
         
         if TEST2:
 
-            print("left")
-            print(V2[i1:i2])
-            print(H2[X,(1+X):(-1-X)])
-            print("---")
-            print(H2)
+            DIAG += f"left\n{V2[i1:i2]}{H2[X,(1+X):(-1-X)]}\n---\n"
+
+            assert np.array_equal(V2[i1:i2], H2[X,(1+X):(-1-X)])
+
+            DIAG += f"{H2}\n"
+
+    if TEST1:
+
+        with open("test1.log",mode="w") as f:
+        
+            print(DIAG)
+            f.write(DIAG)
 
     if TEST2:
 
-        sys.exit("Finished test.")
+        with open("test2.log",mode="w") as f:
+        
+            print(DIAG)
+            f.write(DIAG)
 
     return H2
+
 
 
 
