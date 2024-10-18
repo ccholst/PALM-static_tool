@@ -878,9 +878,9 @@ def z_t_bdy5_debug(H, BUFFER: int = 40, OPERATION: object = np.median,
             assert Vr.size == Vl.size
 
             assert Vbuff.size == V2.size + 2*BUFFER2
-            assert V2.size == 2*(H.shape[0] - 1 + H.shape[1] - 1) - 4*X
+            assert V2.size == 2*(H.shape[0] - 1 + H.shape[1] - 1) - 8*X
 
-            assert np.array_equal(Vbuff[BUFFER:-BUFFER], V2)
+            assert np.array_equal(Vbuff[BUFFER2:-BUFFER2], V2)
 
             H  = np.zeros((10,10))
             H2 = np.zeros((10,10))
