@@ -35,5 +35,5 @@ jobs:
     - name: Lint with ruff
       run: |
         pip install ruff
-        ruff check toolr/*.py
+        ruff check tool/*.py
         ruff check tests/*.py
