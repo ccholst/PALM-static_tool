@@ -1,6 +1,6 @@
-![License checks](https://github.com/ccholst/DWLprocessor/actions/workflows/license_checks.yml/badge.svg)
-![Unit tests](https://github.com/ccholst/DWLprocessor/actions/workflows/unittests.yml/badge.svg)
-![Linting](https://github.com/ccholst/DWLprocessor/actions/workflows/linting.yml/badge.svg)
+![License checks](https://github.com/ccholst/PALM-static_tool/actions/workflows/license_checks.yml/badge.svg)
+![Unit tests](https://github.com/ccholst/PALM-static_tool/actions/workflows/unittests.yml/badge.svg)
+![Linting](https://github.com/ccholst/PALM-static_tool/actions/workflows/linting.yml/badge.svg)
 
 # PALM-static_tool
 This helps modify certain aspects of PALM _static files.
