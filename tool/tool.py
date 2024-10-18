@@ -203,7 +203,7 @@ def process_and_plot(topo_smooth: bool = True,
         print(f"root:           {str(np.shape(T_HGT1))}")
         print(f"N02:            {str(np.shape(T_HGT2))}")
 
-    except:
+    except FileNotFoundError:
 
         pass
 
@@ -285,7 +285,7 @@ def process_and_plot(topo_smooth: bool = True,
                       zorder=6, shading="nearest",
                       vmin=0,vmax=1.05,alpha=0.6)
 
-    except:
+    except ValueError:
 
         pass
 
