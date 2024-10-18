@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+
+# SPDX-FileCopyrightText: 2024 2024 Christopher C. Holst, KIT
+#
+# SPDX-License-Identifier: GPL-3.0-only
+
 # -*- coding: utf-8 -*-
 """
 Created on Fri Sep 30 17:51:35 2022

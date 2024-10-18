@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2024 Christopher Claus Holst
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
+version = 1
+
+[[annotations]]
+path = "*.yml"
+precedence = "override"
+SPDX-FileCopyrightText = "2024 Christopher C. Holst, KIT"
+SPDX-License-Identifier = "CC-BY-4.0"
