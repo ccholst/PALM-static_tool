@@ -79,9 +79,9 @@ Both include additional landuse information like water bodies and buildings for 
 
 Example plots:
 
-[Topography height](/docs/assets/_static_map_TEST.png "Map")
+![Topography height](/docs/assets/_static_map_TEST.png "Map")
 
-[Topography adjustment](/docs/assets/_static_bdy_TEST.png "Adjustment")
+![Topography adjustment](/docs/assets/_static_bdy_TEST.png "Adjustment")
 
 ---
 # Testing and code contributions
