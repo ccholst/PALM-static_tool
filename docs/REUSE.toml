@@ -5,7 +5,8 @@
 version = 1
 
 [[annotations]]
-path = "*.yml"
+path = ["*.yml"
+        "assets/*.png"]
 precedence = "override"
 SPDX-FileCopyrightText = "2024 Christopher C. Holst, KIT"
 SPDX-License-Identifier = "CC-BY-4.0"
