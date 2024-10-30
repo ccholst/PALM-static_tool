@@ -35,19 +35,19 @@ CMAP_dif = cc.cm.CET_D1
 
 # PLOTS: Topography height plot range in meters
 #     This steers the colorbar, adjust for your domain!
-zmin = 0
-zmax = 350
+zmin:int = 0
+zmax:int = 350
 
 # PLOTS: Titles for the plots
-TITLE = "Test domain, PALM-4U v2304, dx/dy = 10m, dz = 10m"
+TITLE:str = "Test domain, PALM-4U v2304, dx/dy = 10m, dz = 10m"
 
 # PROCESSING: Buffer width for topography height and building height
 #    Integer number of grid points from boundary
-BUFFER_T = 26
-BUFFER_B = 16
+BUFFER_T:int = 26
+BUFFER_B:int = 16
 
 # GRID: Vertical grid spacing
-DZ = 10
+DZ:int = 10
 
 # I/O: Two conventions about input file locations are implemented:
 #    {PATH_INPUT}/{JOB_ID}/INPUT/{JOB-ID}_root
@@ -55,17 +55,17 @@ DZ = 10
 
 # I/O: Directories for I/O
 #    Example: '/Users/holst-c/Desktop/JOBS'
-PATH_INPUT = '/Users/holst-c/Desktop'
-PATH_OUTPUT = '/Users/holst-c/Desktop'
+PATH_INPUT:str = '/Users/holst-c/Desktop'
+PATH_OUTPUT:str = '/Users/holst-c/Desktop'
 
 # I/O: Job ID
 #     Example: 'sim01'
-JOB_ID = 'big_suhi_default_static'
+JOB_ID:str = 'big_suhi_default_static'
 
 # MENU: What to order?
-TOPO_SMOOTH = True
-BUILDING_EDITS = True
-PAVEMENT_EDITS = True
+TOPO_SMOOTH:bool = True
+BUILDING_EDITS:bool = True
+PAVEMENT_EDITS:bool = True
 
 # =============================================================================
 # Functions
