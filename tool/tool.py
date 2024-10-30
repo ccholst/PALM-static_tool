@@ -62,6 +62,11 @@ PATH_OUTPUT = '/Users/holst-c/Desktop'
 #     Example: 'sim01'
 JOB_ID = 'big_suhi_default_static'
 
+# MENU: What to order?
+TOPO_SMOOTH = True
+BUILDING_EDITS = True
+PAVEMENT_EDITS = True
+
 # =============================================================================
 # Functions
 # =============================================================================
@@ -258,7 +263,7 @@ def process_and_plot(topo_smooth: bool = True,
     cax = divider.append_axes("right", size="1%", pad=0.02)
     plt.colorbar(im, cax=cax)
 
-    plt.savefig(f"_static_bdy_{JOB_ID}.png", dpi=600)
+    plt.savefig(f"{PATH_OUTPUT}/_static_bdy_{JOB_ID}.png", dpi=600)
     print(f"     saved map as '_static_bdy_{JOB_ID}.png'.")
 
     plt.show()
@@ -315,7 +320,7 @@ def process_and_plot(topo_smooth: bool = True,
     cax = divider.append_axes("right", size="1%", pad=0.02)
     plt.colorbar(im, cax=cax)
 
-    plt.savefig(f"_static_map_{JOB_ID}.png", dpi=600)
+    plt.savefig(f"{PATH_OUTPUT}/_static_map_{JOB_ID}.png", dpi=600)
     print(f"     saved map as '_static_map_{JOB_ID}.png'.")
 
     plt.show()
@@ -1007,4 +1012,4 @@ def z_t_bdy5_debug(H, BUFFER: int = 40, OPERATION: object = np.median,
 
 if __name__ == "__main__":
 
-    process_and_plot()
+    process_and_plot(topo_smooth = TOPO_SMOOTH, bdg_ramp = BUILDING_EDITS, pvmt_fix = PAVEMENT_EDITS)
