@@ -9,7 +9,7 @@ SPDX-License-Identifier: GPL-3.0-only
 ![Linting](https://github.com/ccholst/PALM-static_tool/actions/workflows/linting.yml/badge.svg)
 
 # PALM-static_tool
-This helps modify PALM-4U <JOB_ID>_static files for use with offline nesting (mesoscale forcing lateral bonudary conditions) in realistic domains.
+This helps modify PALM-4U `{JOB_ID}_static` files for use with offline nesting (mesoscale forcing lateral bonudary conditions) in realistic domains.
 
 The code adds several optional modifications:
 
@@ -82,6 +82,33 @@ Example plots:
 ![Topography height](/docs/assets/_static_map_TEST.png "Map")
 
 ![Topography adjustment](/docs/assets/_static_bdy_TEST.png "Adjustment")
+
+---
+
+# Requirements
+
+Install the requirements first:
+
+- numpy
+- xarray
+- h5netcdf
+- netcdf4
+- matplotlib
+- colorcet
+
+You can either install into your standard python installation or favorite environment
+
+```bash
+python -m pip install --upgrade pip
+if [ -f REQUIREMENTS.txt ]; then pip install -r REQUIREMENTS.txt; fi
+```
+
+or a create new environment using the provided conda spec
+
+```bash
+conda create --name PALM-tools --file docs/conda_env.yml
+conda activate PALM-tools
+```
 
 ---
 
