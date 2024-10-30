@@ -28,29 +28,38 @@ import colorcet as cc
 # Parameters
 # =============================================================================
 
-# PLOTS: Colormaps
+# PLOTS: Colormaps for absolute and difference plots
+#    Suggestion: Linear and diverging, perceptually uniform
 CMAP_abs = cc.cm.CET_L11
 CMAP_dif = cc.cm.CET_D1
 
-# PLOTS: Topography plot range
+# PLOTS: Topography height plot range in meters
+#     This steers the colorbar, adjust for your domain!
 zmin = 0
 zmax = 350
 
-# PLOTS: Titles
-TITLE = "Test domain, PALM-4U v2204, dx = 10m, dz = 10m"
+# PLOTS: Titles for the plots
+TITLE = "Test domain, PALM-4U v2304, dx/dy = 10m, dz = 10m"
 
-# PROCESSING: Buffer width
+# PROCESSING: Buffer width for topography height and building height
+#    Integer number of grid points from boundary
 BUFFER_T = 26
 BUFFER_B = 16
 
 # GRID: Vertical grid spacing
-DZ = 15
+DZ = 10
 
-# IO: Paths
-PATH_INPUT = '/Users/holst-c/Desktop/'
-PATH_OUTPUT = '/Users/holst-c/Desktop/'
+# I/O: Two conventions about input file locations are implemented:
+#    {PATH_INPUT}/{JOB_ID}/INPUT/{JOB-ID}_root
+#    {PATH_INPUT}/{JOB-ID}_root
 
-# IO: Job ID
+# I/O: Directories for I/O
+#    Example: '/Users/holst-c/Desktop/JOBS'
+PATH_INPUT = '/Users/holst-c/Desktop'
+PATH_OUTPUT = '/Users/holst-c/Desktop'
+
+# I/O: Job ID
+#     Example: 'sim01'
 JOB_ID = 'big_suhi_default_static'
 
 # =============================================================================
@@ -80,7 +89,13 @@ def process_and_plot(topo_smooth: bool = True,
 
     print("\n ... processing domain 'root' ...")
 
-    DS1 = xr.open_dataset(f"{PATH_INPUT}{JOB_ID}_root")
+    try:
+
+        DS1 = xr.open_dataset(f"{PATH_INPUT}/{JOB_ID}/INPUT/{JOB_ID}_root")
+
+    except FileNotFoundError:
+
+        DS1 = xr.open_dataset(f"{PATH_INPUT}/{JOB_ID}_root")
 
     T_HGT1 = DS1["zt"].values
 
