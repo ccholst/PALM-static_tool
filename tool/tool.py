@@ -315,8 +315,8 @@ def process_and_plot(topo_smooth: bool = True,
     cax = divider.append_axes("right", size="1%", pad=0.02)
     plt.colorbar(im, cax=cax)
 
-    plt.savefig(f"_static_bdy_{JOB_ID}_N02.png", dpi=600)
-    print(f"     saved map as '_static_bdy_{JOB_ID}_N02.png'.")
+    plt.savefig(f"_static_map_{JOB_ID}.png", dpi=600)
+    print(f"     saved map as '_static_map_{JOB_ID}.png'.")
 
     plt.show()
     plt.close()
