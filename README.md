@@ -23,7 +23,7 @@ The code adds several optional modifications:
 
 In the past, there was a bug with metal surfaces causing large heat fluxes. While this has been fixed, for most domains and grid spacings, metal surfaces are seldom found, so this function is kept in the tool for reference.
 
-Depending on the input data, pavement type values might sometimes be out of range. There is a catch-all for that too.
+Depending on the input data, pavement type values might sometimes be out of range. There is a catch-all for that case implemented.
 
 ## Topography heights
 
@@ -57,7 +57,7 @@ Simple Visualization:
 ```
 
 
-This process virtually creates a triangular smoothing kernel, i.e., smooth on longer tangential scales near the boundary and shorter tangential scales further inside the domain. This works for realistic (smooth-ish) topography. For rugged cliffs, arguably, the boundaries should be extended to avoid those.
+This process virtually creates a triangular smoothing kernel, i.e., smooth on longer tangential scales near the boundary and shorter tangential scales further inside the domain. This works for realistic (smooth-ish) topography. For rugged cliffs, arguably, the boundaries should be extended to avoid those; or grid-spacing coarsened to reduce gradients.
 
 ## Building heights
 
@@ -66,7 +66,7 @@ A linear ramp is applied from 0 at the first grid point to the correct building 
 Currently, only `buildings_2d` can be modified correctly. There is a function for `buildings_3d` in the code, but PALM raises errors when this is employed.
 
 > [!TIP]
-> It is also not necessarily useful to add `building_3d` functionality: mesoscale offline nesting is typically applied to grid spacings, where 3-D building structures do not make much sense to simulate in most domains (i.e., > 20 meters). If one were to simulate the largest structures on earth, those would be far from the domain boundary and be unaffected by modifications.
+> It is not necessarily useful to add `building_3d` functionality: mesoscale offline nesting is typically applied to grid spacings, where 3-D building structures do not make much sense to simulate in most domains (i.e., > 20 meters). If one were to simulate the largest structures on earth (which would show 3-D structure on those scales), those would be far from the domain boundary and be unaffected by modifications.
 
 ## Plots
 
@@ -84,6 +84,34 @@ Example plots:
 ![Topography adjustment](/docs/assets/_static_bdy_TEST.png "Adjustment")
 
 ---
+
+# Usage
+
+Edit `tool.py` to steer the behavior of the code.
+
+To execute it:
+
+```bash
+python3 tool.py
+```
+
+All options are located at the top of the file.
+
+Check which edits you want to enable.
+
+The code creates two netCDF4 files and two png plots:
+
+```bash
+{$PATH_OUTPUT}/{$JOB_ID}_static
+{$PATH_OUTPUT}/{$JOB_ID}_static_flat
+{$PATH_OUTPUT}/_static_bdy_{$JOB_ID}.png
+{$PATH_OUTPUT}/_static_map_{$JOB_ID}.png
+```
+
+The parameters `BUFFER_T` and `BUFFER_B` can be experimented with depending on grid spacing. I recommend to choose `BUFFER_T` large enough, that the smoothing length (`BUFFER_T x DX`) is comparable to the mesoscale forcing model grid-spacing.
+
+---
+
 # Testing and code contributions
 
 To contribute, please copy the `z_t_bdy{X}_debug` function to create `z_t_bdy{X+1}_debug`, before adding the `z_t_bdy{X+1}` function and modifying the calls. This helps maintaining functionality, while experimenting.
