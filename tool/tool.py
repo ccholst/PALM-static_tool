@@ -36,10 +36,11 @@ CMAP_dif = cc.cm.CET_D1
 # PLOTS: Topography height plot range in meters
 #     This steers the colorbar, adjust for your domain!
 zmin:int = 0
-zmax:int = 350
+zmax:int = 15
 
 # PLOTS: Titles for the plots
-TITLE:str = "Test domain, PALM-4U v2304, dx/dy = 10m, dz = 10m"
+#TITLE:str = "Test domain, PALM-4U v2304, dx/dy = 10m, dz = 10m"
+TITLE:str = "Photoshade domain, PALM-4U v24.04, dx/dy = 5m, dz = 5m"
 
 # PROCESSING: Buffer width for topography height and building height
 #    Integer number of grid points from boundary
@@ -47,7 +48,8 @@ BUFFER_T:int = 26
 BUFFER_B:int = 16
 
 # GRID: Vertical grid spacing
-DZ:int = 10
+#DZ:int = 10
+DZ:int = 5
 
 # I/O: Two conventions about input file locations are implemented:
 #    {PATH_INPUT}/{JOB_ID}/INPUT/{JOB-ID}_root
@@ -55,12 +57,15 @@ DZ:int = 10
 
 # I/O: Directories for I/O
 #    Example: '/Users/holst-c/Desktop/JOBS'
-PATH_INPUT:str = '/Users/holst-c/Desktop'
+#PATH_INPUT:str = '/Users/holst-c/Desktop'
+#PATH_OUTPUT:str = '/Users/holst-c/Desktop'
+PATH_INPUT:str = '/Users/holst-c/Documents/==PALM==/photoshade/_static'
 PATH_OUTPUT:str = '/Users/holst-c/Desktop'
 
 # I/O: Job ID
 #     Example: 'sim01'
-JOB_ID:str = 'big_suhi_default_static'
+#JOB_ID:str = 'test_5m'
+JOB_ID:str = 'PS4'
 
 # MENU: What to order?
 TOPO_SMOOTH:bool = True
@@ -96,11 +101,13 @@ def process_and_plot(topo_smooth: bool = True,
 
     try:
 
-        DS1 = xr.open_dataset(f"{PATH_INPUT}/{JOB_ID}/INPUT/{JOB_ID}_root")
+        DS1 = xr.open_dataset(f"{PATH_INPUT}/{JOB_ID}/INPUT/{JOB_ID}_root",
+                              engine="netcdf4")
 
     except FileNotFoundError:
 
-        DS1 = xr.open_dataset(f"{PATH_INPUT}/{JOB_ID}_root")
+        DS1 = xr.open_dataset(f"{PATH_INPUT}/{JOB_ID}_root",
+                              engine="netcdf4")
 
     T_HGT1 = DS1["zt"].values
 
@@ -113,7 +120,14 @@ def process_and_plot(topo_smooth: bool = True,
 
     D_b2d = DS1["buildings_2d"].values
     # D_b3d = DS1["buildings_3d"].values
-    # D_bID = DS1["building_id"].values
+    D_bID = DS1["building_id"].values
+
+    print("building type")
+    print(D_bui1)
+    print("building height")
+    print(D_b2d)
+    print("building ID")
+    print(D_bID)
 
     X1 = DS1["E_UTM"].values
     Y1 = DS1["N_UTM"].values
@@ -137,7 +151,7 @@ def process_and_plot(topo_smooth: bool = True,
     if topo_smooth:
 
         print(f" ... smoothing boundary topography buffer = {str(BUFFER_T)} ...")
-        T_HGT1p = z_t_bdy5(T_HGT1,buffer=BUFFER_T)
+        T_HGT1p = z_t_bdy5(T_HGT1,BUFFER=BUFFER_T)
         T_HGT1d = T_HGT1-T_HGT1p
         T_HGT1[:,:] = T_HGT1p
 
@@ -149,18 +163,18 @@ def process_and_plot(topo_smooth: bool = True,
     if bdg_ramp:
 
         print(f" ... ramping boundary buildings buffer = {str(BUFFER_B)} ...")
-        D_b2d[:,:]    = b_h_bdy3(D_b2d, buffer=BUFFER_B)
-        # D_b3d[:,:,:]  = b_h_bdy3_3d(D_b3d, D_b2d, buffer=BUFFER_B, DZ=DZ)
+        D_b2d[:,:]    = b_h_bdy3(D_b2d, BUFFER=BUFFER_B)
+        # D_b3d[:,:,:]  = b_h_bdy3_3d(D_b3d, D_b2d, BUFFER=BUFFER_B, DZ=DZ)
 
     print("\n Topography:")
     print("root min:       " + str(np.min(T_HGT1)) + " m")
     print("root max:       " + str(np.max(T_HGT1)) + " m")
 
-    DS1.to_netcdf(f"{PATH_OUTPUT}{JOB_ID}_static")
+    DS1.to_netcdf(f"{PATH_OUTPUT}/{JOB_ID}_static")
     print(f"     saved 'root' as '{JOB_ID}_static'.")
 
     T_HGT1[:,:] = np.zeros_like(T_HGT1)
-    DS1.to_netcdf(f"{PATH_OUTPUT}{JOB_ID}_static_flat")
+    DS1.to_netcdf(f"{PATH_OUTPUT}/{JOB_ID}_static_flat")
     print(f"     saved 'root' as '{JOB_ID}_static_flat'.")
 
     DS1.close()
@@ -177,7 +191,8 @@ def process_and_plot(topo_smooth: bool = True,
     try: 
 
         print("\n" + " ... processing domain 'N02' ...")
-        DS2 = xr.open_dataset(f"{PATH_INPUT}{JOB_ID}_N02")
+        DS2 = xr.open_dataset(f"{PATH_INPUT}/{JOB_ID}_N02",
+                              engine="netcdf4")
 
         T_HGT2 = DS2["zt"].values
 
@@ -199,7 +214,7 @@ def process_and_plot(topo_smooth: bool = True,
             print(" ... changing {str(np.shape(S[0])[0])} entries pvmt > 15 to 1 ...")
             D_pav2[S] = 1
 
-        DS2.to_netcdf(f"{PATH_INPUT}{JOB_ID}_static_N02")
+        DS2.to_netcdf(f"{PATH_OUTPUT}/{JOB_ID}_static_N02")
         print(f"     saved 'N02' as '{JOB_ID}_static_N02'.")
 
         print("\n Topography:")
@@ -209,7 +224,7 @@ def process_and_plot(topo_smooth: bool = True,
         T_HGT2p = np.copy(T_HGT2[:,:])
 
         T_HGT2[:,:] = np.zeros_like(T_HGT2)
-        DS2.to_netcdf(f"{PATH_OUTPUT}{JOB_ID}_static_N02_flat")
+        DS2.to_netcdf(f"{PATH_OUTPUT}/{JOB_ID}_static_N02_flat")
         print(f"     saved 'root' as '{JOB_ID}_static_N02_flat'.")
 
         DS2.close()
@@ -266,7 +281,6 @@ def process_and_plot(topo_smooth: bool = True,
     plt.savefig(f"{PATH_OUTPUT}/_static_bdy_{JOB_ID}.png", dpi=600)
     print(f"     saved map as '_static_bdy_{JOB_ID}.png'.")
 
-    plt.show()
     plt.close()
 
 # =============================================================================
@@ -310,7 +324,7 @@ def process_and_plot(topo_smooth: bool = True,
                       zorder=6, shading="nearest",
                       vmin=0,vmax=1.05,alpha=0.6)
 
-    except ValueError:
+    except UnboundLocalError:
 
         pass
 
@@ -323,7 +337,6 @@ def process_and_plot(topo_smooth: bool = True,
     plt.savefig(f"{PATH_OUTPUT}/_static_map_{JOB_ID}.png", dpi=600)
     print(f"     saved map as '_static_map_{JOB_ID}.png'.")
 
-    plt.show()
     plt.close()
 
     return
