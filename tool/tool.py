@@ -70,6 +70,8 @@ JOB_ID:str = 'PS4'
 # MENU: What to order?
 TOPO_SMOOTH:bool = True
 BUILDING_EDITS:bool = True
+BUILDING_3D:bool = True
+BUILDING_ID:bool = True
 PAVEMENT_EDITS:bool = True
 
 # =============================================================================
@@ -78,6 +80,8 @@ PAVEMENT_EDITS:bool = True
 
 def process_and_plot(topo_smooth: bool = True,
                      bdg_ramp:    bool = True,
+                     bdg_3d:      bool = True,
+                     bdg_id:      bool = True,
                      pvmt_fix:    bool = True):
     """
     This functions adjusts static driver data and plots it.
@@ -94,10 +98,13 @@ def process_and_plot(topo_smooth: bool = True,
         - changing pavement_type > 15 to 1
         - smoothing boundary topography along the boundary
         - ramping building heights near the boundary
+        - set overprovisioned values of building ID to nan
+        - remap building ID to [1,...,N] for N buildings in the domain
+        - removing 3-D building structures where building_2d not defined
     
     """
 
-    print("\n ... processing domain 'root' ...")
+    print("\n ... processing domain 'root' ...\n")
 
     try:
 
@@ -119,38 +126,36 @@ def process_and_plot(topo_smooth: bool = True,
     # D_sfc = DS1["surface_fraction"].values
 
     D_b2d = DS1["buildings_2d"].values
-    # D_b3d = DS1["buildings_3d"].values
+    D_b3d = DS1["buildings_3d"].values
     D_bID = DS1["building_id"].values
-
-    print("building type")
-    print(D_bui1)
-    print("building height")
-    print(D_b2d)
-    print("building ID")
-    print(D_bID)
 
     X1 = DS1["E_UTM"].values
     Y1 = DS1["N_UTM"].values
 
-# =============================================================================
-# Adjust domain 1
-# =============================================================================
-
+    #==========================================================================
     # Pavement fix
+
     if pvmt_fix:
 
         S = np.where(D_pav1[:,:]==7)
-        print(" ... changing {str(np.shape(S[0])[0])} entries pvmt = 7 to 1 ...")
-        D_pav1[S] = 1
-    
-    S = np.where(D_pav1[:,:]>15)
-    print(f" ... changing {str(np.shape(S[0])[0])} entries pvmt > 15 to 1 ...")
-    D_pav1[S] = 1
 
+        print(f" ... changing {np.shape(S[0])[0]} entries pvmt = 7 to 1 ...")
+
+        D_pav1[S] = 1
+
+        S = np.where(D_pav1[:,:]>15)
+
+        print(f" ... changing {np.shape(S[0])[0]} entries pvmt > 15 to 1 ...")
+
+        D_pav1[S] = 1
+
+    #==========================================================================
     # Topography smoothing
+
     if topo_smooth:
 
-        print(f" ... smoothing boundary topography buffer = {str(BUFFER_T)} ...")
+        print(f" ... smoothing boundary topography buffer = {BUFFER_T} ...")
+
         T_HGT1p = z_t_bdy5(T_HGT1,BUFFER=BUFFER_T)
         T_HGT1d = T_HGT1-T_HGT1p
         T_HGT1[:,:] = T_HGT1p
@@ -159,40 +164,83 @@ def process_and_plot(topo_smooth: bool = True,
 
         T_HGT1p = np.copy(T_HGT1[:,:])
 
+    #==========================================================================
     # Building height ramping
+
     if bdg_ramp:
 
-        print(f" ... ramping boundary buildings buffer = {str(BUFFER_B)} ...")
+        print(f" ... ramping boundary buildings buffer = {BUFFER_B} ...")
+
         D_b2d[:,:]    = b_h_bdy3(D_b2d, BUFFER=BUFFER_B)
-        # D_b3d[:,:,:]  = b_h_bdy3_3d(D_b3d, D_b2d, BUFFER=BUFFER_B, DZ=DZ)
 
-    print("\n Topography:")
-    print("root min:       " + str(np.min(T_HGT1)) + " m")
-    print("root max:       " + str(np.max(T_HGT1)) + " m")
+    #==========================================================================
+    # Building 3D processing
 
-    DS1.to_netcdf(f"{PATH_OUTPUT}/{JOB_ID}_static")
-    print(f"     saved 'root' as '{JOB_ID}_static'.")
+    if bdg_3d:
 
-    T_HGT1[:,:] = np.zeros_like(T_HGT1)
-    DS1.to_netcdf(f"{PATH_OUTPUT}/{JOB_ID}_static_flat")
-    print(f"     saved 'root' as '{JOB_ID}_static_flat'.")
+        print(f" ... processing building_3d with buffer = {BUFFER_B} ...")
 
-    DS1.close()
+        D_b3d[:,:,:]  = b_h_bdy3_3d(D_b3d, D_b2d, BUFFER=BUFFER_B, DZ=DZ)
 
-    print(" ... processing *_type masks ...")
+    #==========================================================================
+    # Building ID adjustments
+
+    if bdg_id:
+
+        N = np.abs(np.where(np.isfinite(D_bID))[1].shape[0] -
+                   np.where(np.isfinite(D_bui1))[1].shape[0])
+
+        print(f" ... changing {N} entries building_ID to nan ...")
+
+        D_bID[np.where(np.isnan(D_bui1))] = np.nan
+
+        print(f" ... changing building_ID to set [1,...,{np.unique(D_bID).size}] ...")
+
+        for i, v in enumerate(np.unique(D_bID)):
+
+            if np.isnan(v):
+
+                continue
+
+            D_bID[np.where(D_bID==v)] = i + 1
+
+    #==========================================================================
+    # *_type mrrays
+
+    print(" ... processing *_type arrays ...")
+
     D_pav1[np.where(np.abs(D_pav1[:,:])<40.)] = 1
     D_bui1[np.where(np.abs(D_bui1[:,:])<40.)] = 1
     D_wat1[np.where(np.abs(D_wat1[:,:])<40.)] = 1
 
+    # =========================================================================
+    # Diagnostics
+
+    print("\n    Topography:")
+    print(f"      root min:       {np.min(T_HGT1)} m")
+    print(f"      root max:       {np.max(T_HGT1)} m\n")
+
+    DS1.to_netcdf(f"{PATH_OUTPUT}/{JOB_ID}_static")
+
+    print(f" ==> saved 'root' as '{JOB_ID}_static'")
+
+    T_HGT1[:,:] = np.zeros_like(T_HGT1)
+
+    DS1.to_netcdf(f"{PATH_OUTPUT}/{JOB_ID}_static_flat")
+
+    print(f" ==> saved 'root' as '{JOB_ID}_static_flat'")
+
+    DS1.close()
+
 # =============================================================================
-# Adjust domain 2
+# Domain N02
 # =============================================================================
 
-    try: 
+    try:
 
-        print("\n" + " ... processing domain 'N02' ...")
-        DS2 = xr.open_dataset(f"{PATH_INPUT}/{JOB_ID}_N02",
-                              engine="netcdf4")
+        DS2 = xr.open_dataset(f"{PATH_INPUT}/{JOB_ID}_N02", engine="netcdf4")
+
+        print("\n ... processing domain 'N02' ...\n")
 
         T_HGT2 = DS2["zt"].values
 
@@ -203,57 +251,71 @@ def process_and_plot(topo_smooth: bool = True,
         X2 = DS2["E_UTM"].values
         Y2 = DS2["N_UTM"].values
 
+        #======================================================================
         # Pavement fix
+
         if pvmt_fix:
 
-            S = np.where(D_pav2[:,:]==7)
-            print(f" ... changing {str(np.shape(S[0])[0])} entries pvmt = 7 to 1 ...")
-            D_pav2[S] = 1
+            S = np.where(D_pav1[:,:]==7)
 
-            S = np.where(D_pav1[:,:]>15)
-            print(" ... changing {str(np.shape(S[0])[0])} entries pvmt > 15 to 1 ...")
-            D_pav2[S] = 1
+            print(f" ... changing {np.shape(S[0])[0]} entries pvmt = 7 to 1 ...")
 
-        DS2.to_netcdf(f"{PATH_OUTPUT}/{JOB_ID}_static_N02")
-        print(f"     saved 'N02' as '{JOB_ID}_static_N02'.")
-
-        print("\n Topography:")
-        print(f"N02  min:       {str(np.min(T_HGT2))} m")
-        print(f"N02  max:       {str(np.max(T_HGT2))} m")
+            D_pav1[S] = 1
     
-        T_HGT2p = np.copy(T_HGT2[:,:])
+            S = np.where(D_pav1[:,:]>15)
 
-        T_HGT2[:,:] = np.zeros_like(T_HGT2)
-        DS2.to_netcdf(f"{PATH_OUTPUT}/{JOB_ID}_static_N02_flat")
-        print(f"     saved 'root' as '{JOB_ID}_static_N02_flat'.")
+            print(f" ... changing {np.shape(S[0])[0]} entries pvmt > 15 to 1 ...")
 
-        DS2.close()
+            D_pav1[S] = 1
+
+        #======================================================================
+        # *_type mrrays
 
         print(" ... processing *_type masks ...")
+
         D_pav2[np.where(np.abs(D_pav2[:,:])<20.)] = 1
         D_bui2[np.where(np.abs(D_bui2[:,:])<20.)] = 1
         D_wat2[np.where(np.abs(D_wat2[:,:])<20.)] = 1
 
-        print("\n Domain details:")
-        print("\n Edge of child domain:")
-        print(f"N02 offset x:   {str(X2[0,0]-X1[0,0])} m")
-        print(f"N02 offset y:   {str(Y2[0,0]-Y1[0,0])} m")
+        DS2.to_netcdf(f"{PATH_OUTPUT}/{JOB_ID}_static_N02")
 
-        print("\n Sizes:")
-        print(f"root:           {str(np.shape(T_HGT1))}")
-        print(f"N02:            {str(np.shape(T_HGT2))}")
+        #======================================================================
+        # Diagnostics
+
+        print("\n    Topography:")
+        print(f"      N02  min:       {np.min(T_HGT2)} m")
+        print(f"      N02  max:       {np.max(T_HGT2)} m")
+    
+        T_HGT2p = np.copy(T_HGT2[:,:])
+
+        T_HGT2[:,:] = np.zeros_like(T_HGT2)
+
+        DS2.to_netcdf(f"{PATH_OUTPUT}/{JOB_ID}_static_N02_flat")
+
+        DS2.close()
+
+        print("\n    Edge of child domain:")
+        print(f"      N02 offset x:   {X2[0,0]-X1[0,0]} m")
+        print(f"      N02 offset y:   {Y2[0,0]-Y1[0,0]} m")
+        print("\n      Sizes:")
+        print(f"      root:           {np.shape(T_HGT1)}")
+        print(f"      N02:            {np.shape(T_HGT2)}\n")
+
+        print(f" ==> saved 'N02' as '{JOB_ID}_static_N02'")
+        print(f" ==> saved 'N02' as '{JOB_ID}_static_N02_flat'")
+
 
     except FileNotFoundError:
 
         pass
 
 # =============================================================================
-# Difference plot for domain 1
+# Difference plot (domain root only)
 # =============================================================================
 
     nx, ny = np.shape(T_HGT1)
 
-    print("\n ... plotting map of masks and topo ...")
+    print("\n ... plotting map of masks and topo ...\n")
 
     fig = plt.figure(figsize=np.array([ny,nx])/450.*20./0.92)
 
@@ -272,6 +334,7 @@ def process_and_plot(topo_smooth: bool = True,
     ax.pcolormesh(X1, Y1, D_wat1, edgecolors='none', snap=True, cmap='Blues',
                   zorder=2, shading="nearest",
                   vmin=0,vmax=1.05,alpha=0.6)
+
     ax.set_title(TITLE)
 
     divider = make_axes_locatable(ax)
@@ -279,12 +342,13 @@ def process_and_plot(topo_smooth: bool = True,
     plt.colorbar(im, cax=cax)
 
     plt.savefig(f"{PATH_OUTPUT}/_static_bdy_{JOB_ID}.png", dpi=600)
-    print(f"     saved map as '_static_bdy_{JOB_ID}.png'.")
+
+    print(f" ==> saved map as '_static_bdy_{JOB_ID}.png'")
 
     plt.close()
 
 # =============================================================================
-# Topo plot for domain 1
+# Topo plot
 # =============================================================================
 
     fig = plt.figure(figsize=np.array([ny,nx])/450.*20./0.92)
@@ -305,9 +369,8 @@ def process_and_plot(topo_smooth: bool = True,
                   zorder=2, shading="nearest",
                   vmin=0,vmax=1.05,alpha=0.6)
 
-# =============================================================================
-# Try to plot domain 2, if it exists
-# =============================================================================
+    # =========================================================================
+    # Domain N02
 
     try:
 
@@ -335,7 +398,8 @@ def process_and_plot(topo_smooth: bool = True,
     plt.colorbar(im, cax=cax)
 
     plt.savefig(f"{PATH_OUTPUT}/_static_map_{JOB_ID}.png", dpi=600)
-    print(f"     saved map as '_static_map_{JOB_ID}.png'.")
+
+    print(f" ==> saved map as '_static_map_{JOB_ID}.png'")
 
     plt.close()
 
@@ -458,9 +522,10 @@ def b_h_bdy3_3d(BH3D, BH2D, BUFFER=10, DZ=5):
 
         for j in range(BH3.shape[2]):
 
-            if not np.isfinite(BH2D[i,j]):
+            # Remove building structures where no building_2d
+            if np.isnan(BH2D[i,j]):
 
-                BH3[:,i,j] = 0
+                BH3[:,i,j] = 0.
 
                 continue
 
@@ -472,9 +537,11 @@ def b_h_bdy3_3d(BH3D, BH2D, BUFFER=10, DZ=5):
 
                 continue
 
-            BH3[:,i,j] = 0
+            # Set column to 0.
+            BH3[:,i,j] = 0.
 
-            BH3[:int(BH2D[i,j] / DZ),i,j] = 1
+            # Find index based on building_2d
+            BH3[:int(BH2D[i,j] / DZ),i,j] = 1.
 
     return BH3
 
@@ -1025,4 +1092,8 @@ def z_t_bdy5_debug(H, BUFFER: int = 40, OPERATION: object = np.median,
 
 if __name__ == "__main__":
 
-    process_and_plot(topo_smooth = TOPO_SMOOTH, bdg_ramp = BUILDING_EDITS, pvmt_fix = PAVEMENT_EDITS)
+    process_and_plot(topo_smooth = TOPO_SMOOTH,
+                     bdg_ramp = BUILDING_EDITS,
+                     pvmt_fix = PAVEMENT_EDITS,
+                     bdg_id = BUILDING_ID,
+                     bdg_3d = BUILDING_3D)
