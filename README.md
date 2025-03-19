@@ -4,6 +4,7 @@ SPDX-FileCopyrightText: 2024 2024 Christopher C. Holst, KIT
 SPDX-License-Identifier: GPL-3.0-only
 -->
 
+[![DOI](https://zenodo.org/badge/868971441.svg)](https://zenodo.org/badge/latestdoi/868971441)
 ![License checks](https://github.com/ccholst/PALM-static_tool/actions/workflows/license_checks.yml/badge.svg)
 ![Unit tests](https://github.com/ccholst/PALM-static_tool/actions/workflows/unittests.yml/badge.svg)
 ![Linting](https://github.com/ccholst/PALM-static_tool/actions/workflows/linting.yml/badge.svg)
